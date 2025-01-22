@@ -84,9 +84,11 @@ class GCPEnumerateCloudStorageObjects(BaseTechnique):
             if folder_path and blob.name == folder_path:
                 continue
             
-            if any(object.get("name") == blob.name for object in objects) :
-                for object in objects :
-                    if object.get("name") == blob.name:
+            object_names = {object["name"][1:] for object in objects}
+
+            if blob.name in object_names:
+                for object in objects:
+                    if object["name"][1:] == blob.name:
                         date_to_compare = []
                         for version in object.get("versions"):
                             updated_date = datetime.fromisoformat(version.get("updated"))
@@ -98,9 +100,11 @@ class GCPEnumerateCloudStorageObjects(BaseTechnique):
                             'md5_hash': blob.md5_hash
                         }
                         object["versions"].insert(index, version)
+            elif blob.name.endswith("/"):
+                continue
             else :
                 objects.append({
-                    'name': blob.name,
+                    'name': f"/{blob.name}",
                     'size': blob.size,
                     'content_type': blob.content_type,
                     'created': blob.time_created.isoformat() if blob.time_created else None,
